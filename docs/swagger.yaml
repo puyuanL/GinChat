@@ -49,7 +49,7 @@ paths:
       tags:
       - 用户模块
   /user/findUserByNameAndPwd:
-    get:
+    post:
       parameters:
       - description: 用户名
         in: query

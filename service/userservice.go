@@ -35,19 +35,19 @@ func GetUserList(c *gin.Context) {
 // @Tags 用户模块
 // @param name query string false "用户名"
 // @param password query string false "密码"
-// @param repassword query string false "确认密码"
+// @param rePassword query string false "确认密码"
 // @Success 200 {string} json{"code","message"}
 // @Router /user/createUser [get]
 func CreateUser(c *gin.Context) {
 	user := models.UserBasic{}
 	user.Name = c.Request.FormValue("name")
 	password := c.Request.FormValue("password")
-	repassword := c.Request.FormValue("Identity")
-	fmt.Println(user.Name, "  >>>>>>>>>>>  ", password, repassword)
+	rePassword := c.Request.FormValue("Identity")
+	fmt.Println(user.Name, "  >>>>>>>>>>>  ", password, rePassword)
 	salt := fmt.Sprintf("%06d", rand.Int31())
 
 	data := models.FindUserByName(user.Name)
-	if user.Name == "" || password == "" || repassword == "" {
+	if user.Name == "" || password == "" || rePassword == "" {
 		c.JSON(200, gin.H{
 			"code":    -1, //  0成功   -1失败
 			"message": "用户名或密码不能为空！",
@@ -63,7 +63,7 @@ func CreateUser(c *gin.Context) {
 		})
 		return
 	}
-	if password != repassword {
+	if password != rePassword {
 		c.JSON(200, gin.H{
 			"code":    -1, //  0成功   -1失败
 			"message": "两次密码不一致！",
@@ -86,7 +86,7 @@ func CreateUser(c *gin.Context) {
 	})
 }
 
-// GetUserList
+// FindUserByNameAndPwd
 // @Summary 所有用户
 // @Tags 用户模块
 // @param name query string false "用户名"
@@ -94,39 +94,53 @@ func CreateUser(c *gin.Context) {
 // @Success 200 {string} json{"code","message"}
 // @Router /user/findUserByNameAndPwd [post]
 func FindUserByNameAndPwd(c *gin.Context) {
-	data := models.UserBasic{}
-
-	//name := c.Query("name")
-	//password := c.Query("password")
 	name := c.Request.FormValue("name")
 	password := c.Request.FormValue("password")
-	fmt.Println(name, password)
 	user := models.FindUserByName(name)
 	if user.Name == "" {
 		c.JSON(200, gin.H{
 			"code":    -1, //  0成功   -1失败
 			"message": "该用户不存在",
-			"data":    data,
+			"data":    nil,
 		})
 		return
 	}
 
-	flag := utils.ValidPassword(password, user.Salt, user.PassWord)
-	if !flag {
+	if !utils.ValidPassword(password, user.Salt, user.PassWord) {
 		c.JSON(200, gin.H{
 			"code":    -1, //  0成功   -1失败
 			"message": "密码不正确",
-			"data":    data,
+			"data":    nil,
 		})
 		return
 	}
-	pwd := utils.MakePassword(password, user.Salt)
-	data = models.FindUserByNameAndPwd(name, pwd)
+	var err error
+	user.Identity, err = utils.GenerateTokens(user.ID, user.Name)
+	if err != nil {
+		fmt.Println("generate user token error: ", err)
+		c.JSON(200, gin.H{
+			"code":    -1,
+			"message": "error generate fail",
+			"data":    nil,
+		})
+		return
+	}
+	// (choose)
+	err = models.RefreshSQLToken(user, user.Identity)
+	if err != nil {
+		fmt.Println("refresh database data error: ", err)
+		c.JSON(200, gin.H{
+			"code":    -1,
+			"message": "error refresh database data",
+			"data":    user,
+		})
+		return
+	}
 
 	c.JSON(200, gin.H{
 		"code":    0, //  0成功   -1失败
 		"message": "登录成功",
-		"data":    data,
+		"data":    user,
 	})
 }
 
@@ -254,7 +268,6 @@ func SearchFriends(c *gin.Context) {
 func AddFriend(c *gin.Context) {
 	userId, _ := strconv.Atoi(c.Request.FormValue("userId"))
 	targetName := c.Request.FormValue("targetName")
-	//targetId, _ := strconv.Atoi(c.Request.FormValue("targetId"))
 	code, msg := models.AddFriend(uint(userId), targetName)
 	if code == 0 {
 		utils.RespOK(c.Writer, code, msg)
@@ -263,7 +276,7 @@ func AddFriend(c *gin.Context) {
 	}
 }
 
-// 新建群
+// CreateCommunity 新建群
 func CreateCommunity(c *gin.Context) {
 	ownerId, _ := strconv.Atoi(c.Request.FormValue("ownerId"))
 	name := c.Request.FormValue("name")
@@ -282,7 +295,7 @@ func CreateCommunity(c *gin.Context) {
 	}
 }
 
-// 加载群列表
+// LoadCommunity 加载群列表
 func LoadCommunity(c *gin.Context) {
 	ownerId, _ := strconv.Atoi(c.Request.FormValue("ownerId"))
 	//	name := c.Request.FormValue("name")
@@ -294,7 +307,7 @@ func LoadCommunity(c *gin.Context) {
 	}
 }
 
-// 加入群 userId uint, comId uint
+// JoinGroups 加入群 userId uint, comId uint
 func JoinGroups(c *gin.Context) {
 	userId, _ := strconv.Atoi(c.Request.FormValue("userId"))
 	comId := c.Request.FormValue("comId")

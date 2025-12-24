@@ -18,7 +18,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// 消息
+// Message 消息
 type Message struct {
 	gorm.Model
 	UserId     int64  //发送者
@@ -53,23 +53,23 @@ type Node struct {
 }
 
 // 映射关系
-var clientMap map[int64]*Node = make(map[int64]*Node, 0)
+var clientMap = make(map[int64]*Node)
 
 // 读写锁
 var rwLocker sync.RWMutex
 
-// 需要 ：发送者ID ，接受者ID ，消息类型，发送的内容，发送类型
+// Chat 需要 ：发送者ID ，接受者ID ，消息类型，发送的内容，发送类型
 func Chat(writer http.ResponseWriter, request *http.Request) {
 	//1.  获取参数 并 检验 token 等合法性
 	//token := query.Get("token")
 	query := request.URL.Query()
 	Id := query.Get("userId")
 	userId, _ := strconv.ParseInt(Id, 10, 64)
-	isvalida := true //checkToke()  待.........
+	isValid := true //checkToke()  待.........
 	conn, err := (&websocket.Upgrader{
 		//token 校验
 		CheckOrigin: func(r *http.Request) bool {
-			return isvalida
+			return isValid
 		},
 	}).Upgrade(writer, request, nil)
 	if err != nil {
@@ -154,7 +154,7 @@ func init() {
 // 完成udp数据发送协程
 func udpSendProc() {
 	con, err := net.DialUDP("udp", nil, &net.UDPAddr{
-		IP:   net.IPv4(10, 70, 207, 199),
+		IP:   net.IPv4(10, 70, 0, 255),
 		Port: viper.GetInt("port.udp"),
 	})
 	defer con.Close()
@@ -258,7 +258,7 @@ func sendMsg(userId int64, msg []byte) {
 	targetIdStr := strconv.Itoa(int(userId))
 	userIdStr := strconv.Itoa(int(jsonMsg.UserId))
 	jsonMsg.CreateTime = uint64(time.Now().Unix())
-	r, err := utils.Red.Get(ctx, "online_"+userIdStr).Result()
+	r, err := utils.RedisClient.Get(ctx, "online_"+userIdStr).Result()
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -274,13 +274,13 @@ func sendMsg(userId int64, msg []byte) {
 	} else {
 		key = "msg_" + targetIdStr + "_" + userIdStr
 	}
-	res, err := utils.Red.ZRevRange(ctx, key, 0, -1).Result()
+	res, err := utils.RedisClient.ZRevRange(ctx, key, 0, -1).Result()
 	if err != nil {
 		fmt.Println(err)
 	}
 	score := float64(cap(res)) + 1
-	ress, e := utils.Red.ZAdd(ctx, key, &redis.Z{score, msg}).Result() //jsonMsg
-	//res, e := utils.Red.Do(ctx, "zadd", key, 1, jsonMsg).Result() //备用 后续拓展 记录完整msg
+	ress, e := utils.RedisClient.ZAdd(ctx, key, &redis.Z{score, msg}).Result() //jsonMsg
+	//res, e := utils.RedisClient.Do(ctx, "zadd", key, 1, jsonMsg).Result() //备用 后续拓展 记录完整msg
 	if e != nil {
 		fmt.Println(e)
 	}
@@ -312,9 +312,9 @@ func RedisMsg(userIdA int64, userIdB int64, start int64, end int64, isRev bool) 
 	var rels []string
 	var err error
 	if isRev {
-		rels, err = utils.Red.ZRange(ctx, key, start, end).Result()
+		rels, err = utils.RedisClient.ZRange(ctx, key, start, end).Result()
 	} else {
-		rels, err = utils.Red.ZRevRange(ctx, key, start, end).Result()
+		rels, err = utils.RedisClient.ZRevRange(ctx, key, start, end).Result()
 	}
 	if err != nil {
 		fmt.Println(err) //没有找到

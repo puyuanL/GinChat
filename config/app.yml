@@ -1,6 +1,6 @@
 app:
   name: GinChat
-  port: 8081
+  port: 8082
   env: dev
 mysql:
   dns: root:1234@tcp(172.18.91.89:3306)/ginchat?charset=utf8mb4&parseTime=True&loc=Local

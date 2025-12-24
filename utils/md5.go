@@ -21,13 +21,13 @@ func MD5Encode(data string) string {
 }
 
 // MakePassword 加密
-func MakePassword(plainpwd, salt string) string {
-	return Md5Encode(plainpwd + salt)
+func MakePassword(plainPwd, salt string) string {
+	return Md5Encode(plainPwd + salt)
 }
 
 // ValidPassword 解密
-func ValidPassword(plainpwd, salt string, password string) bool {
-	md := Md5Encode(plainpwd + salt)
+func ValidPassword(plainPwd, salt string, password string) bool {
+	md := Md5Encode(plainPwd + salt)
 	fmt.Println(md + "				" + password)
 	return md == password
 }

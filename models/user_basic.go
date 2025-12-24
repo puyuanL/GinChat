@@ -39,15 +39,9 @@ func GetUserList() []*UserBasic {
 	return data
 }
 
-func FindUserByNameAndPwd(name string, password string) UserBasic {
-	user := UserBasic{}
-	utils.DB.Where("name = ? and pass_word=?", name, password).First(&user)
-
-	//token加密
-	str := fmt.Sprintf("%d", time.Now().Unix())
-	temp := utils.MD5Encode(str)
-	utils.DB.Model(&user).Where("id = ?", user.ID).Update("identity", temp)
-	return user
+func RefreshSQLToken(user UserBasic, token string) error {
+	result := utils.DB.Model(&user).Where("id = ?", user.ID).Update("identity", token)
+	return result.Error
 }
 
 func FindUserByName(name string) UserBasic {
@@ -73,7 +67,7 @@ func UpdateUser(user UserBasic) *gorm.DB {
 	return utils.DB.Model(&user).Updates(UserBasic{Name: user.Name, PassWord: user.PassWord, Phone: user.Phone, Email: user.Email, Avatar: user.Avatar})
 }
 
-// 查找某个用户
+// FindByID 查找某个用户
 func FindByID(id uint) UserBasic {
 	user := UserBasic{}
 	utils.DB.Where("id = ?", id).First(&user)

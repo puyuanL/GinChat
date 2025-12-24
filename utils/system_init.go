@@ -15,8 +15,8 @@ import (
 )
 
 var (
-	DB  *gorm.DB
-	Red *redis.Client
+	DB          *gorm.DB
+	RedisClient *redis.Client
 )
 
 func InitConfig() {
@@ -49,7 +49,7 @@ func InitMySQL() {
 }
 
 func InitRedis() {
-	Red = redis.NewClient(&redis.Options{
+	RedisClient = redis.NewClient(&redis.Options{
 		Addr:         viper.GetString("redis.addr"),
 		Password:     viper.GetString("redis.password"),
 		DB:           viper.GetInt("redis.DB"),
@@ -66,7 +66,7 @@ const (
 func Publish(ctx context.Context, channel string, msg string) error {
 	var err error
 	fmt.Println("Publish...", msg)
-	err = Red.Publish(ctx, channel, msg).Err()
+	err = RedisClient.Publish(ctx, channel, msg).Err()
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -75,7 +75,7 @@ func Publish(ctx context.Context, channel string, msg string) error {
 
 // Subscribe 订阅Redis消息
 func Subscribe(ctx context.Context, channel string) (string, error) {
-	sub := Red.Subscribe(ctx, channel)
+	sub := RedisClient.Subscribe(ctx, channel)
 	fmt.Println("Subscribe...", ctx)
 	msg, err := sub.ReceiveMessage(ctx)
 	if err != nil {

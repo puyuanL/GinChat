@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// 人员关系
+// Contact 人员关系
 type Contact struct {
 	gorm.Model
 	OwnerId  uint //谁的关系信息
@@ -31,9 +31,10 @@ func SearchFriend(userId uint) []UserBasic {
 	return users
 }
 
-// 添加好友   自己的ID  ， 好友的ID
+// AddFriend 添加好友
+// @Param userId 自己的ID
+// @Param targetName	好友的ID
 func AddFriend(userId uint, targetName string) (int, string) {
-	//user := UserBasic{}
 
 	if targetName != "" {
 		targetUser := FindUserByName(targetName)
@@ -83,7 +84,7 @@ func SearchUserByGroupId(communityId uint) []uint {
 	objIds := make([]uint, 0)
 	utils.DB.Where("target_id = ? and type=2", communityId).Find(&contacts)
 	for _, v := range contacts {
-		objIds = append(objIds, uint(v.OwnerId))
+		objIds = append(objIds, v.OwnerId)
 	}
 	return objIds
 }

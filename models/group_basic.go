@@ -2,7 +2,7 @@ package models
 
 import "gorm.io/gorm"
 
-// 群信息
+// GroupBasic 群信息
 type GroupBasic struct {
 	gorm.Model
 	Name    string
