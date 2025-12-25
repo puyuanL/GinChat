@@ -4,15 +4,12 @@ import (
 	"GinChat/models"
 	"GinChat/utils"
 	"fmt"
-	"log"
 	"math/rand"
-	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 )
 
 // GetUserList
@@ -25,7 +22,7 @@ func GetUserList(c *gin.Context) {
 	data = models.GetUserList()
 	c.JSON(200, gin.H{
 		"code":    0, //  0成功   -1失败
-		"message": "用户名已注册！",
+		"message": "获取用户列表成功！",
 		"data":    data,
 	})
 }
@@ -43,7 +40,6 @@ func CreateUser(c *gin.Context) {
 	user.Name = c.Request.FormValue("name")
 	password := c.Request.FormValue("password")
 	rePassword := c.Request.FormValue("Identity")
-	fmt.Println(user.Name, "  >>>>>>>>>>>  ", password, rePassword)
 	salt := fmt.Sprintf("%06d", rand.Int31())
 
 	data := models.FindUserByName(user.Name)
@@ -71,10 +67,9 @@ func CreateUser(c *gin.Context) {
 		})
 		return
 	}
-	//user.PassWord = password
+
 	user.PassWord = utils.MakePassword(password, salt)
 	user.Salt = salt
-	fmt.Println(user.PassWord)
 	user.LoginTime = time.Now()
 	user.LoginOutTime = time.Now()
 	user.HeartbeatTime = time.Now()
@@ -87,7 +82,7 @@ func CreateUser(c *gin.Context) {
 }
 
 // FindUserByNameAndPwd
-// @Summary 所有用户
+// @Summary 用户登录
 // @Tags 用户模块
 // @param name query string false "用户名"
 // @param password query string false "密码"
@@ -204,26 +199,42 @@ func UpdateUser(c *gin.Context) {
 }
 
 // 防止跨域站点伪造请求
-var upGrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
-
-func SendMsg(c *gin.Context) {
-	ws, err := upGrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer func(ws *websocket.Conn) {
-		err = ws.Close()
-		if err != nil {
-			fmt.Println(err)
-		}
-	}(ws)
-	MsgHandler(c, ws)
-}
+//var upGrader = websocket.Upgrader{
+//	CheckOrigin: func(r *http.Request) bool {
+//		return true
+//	},
+//}
+//
+//func SendMsg(c *gin.Context) {
+//	ws, err := upGrader.Upgrade(c.Writer, c.Request, nil)
+//	if err != nil {
+//		fmt.Println(err)
+//		return
+//	}
+//	defer func(ws *websocket.Conn) {
+//		err = ws.Close()
+//		if err != nil {
+//			fmt.Println(err)
+//		}
+//	}(ws)
+//	MsgHandler(c, ws)
+//}
+//
+//func MsgHandler(c *gin.Context, ws *websocket.Conn) {
+//	for {
+//		msg, err := utils.Subscribe(c, utils.PublishKey)
+//		if err != nil {
+//			fmt.Println(" MsgHandler 发送失败", err)
+//		}
+//
+//		tm := time.Now().Format("2006-01-02 15:04:05")
+//		m := fmt.Sprintf("[ws][%s]:%s", tm, msg)
+//		err = ws.WriteMessage(1, []byte(m))
+//		if err != nil {
+//			log.Fatalln(err)
+//		}
+//	}
+//}
 
 func RedisMsg(c *gin.Context) {
 	userIdA, _ := strconv.Atoi(c.PostForm("userIdA"))
@@ -235,36 +246,18 @@ func RedisMsg(c *gin.Context) {
 	utils.RespOKList(c.Writer, "ok", res)
 }
 
-func MsgHandler(c *gin.Context, ws *websocket.Conn) {
-	for {
-		msg, err := utils.Subscribe(c, utils.PublishKey)
-		if err != nil {
-			fmt.Println(" MsgHandler 发送失败", err)
-		}
-
-		tm := time.Now().Format("2006-01-02 15:04:05")
-		m := fmt.Sprintf("[ws][%s]:%s", tm, msg)
-		err = ws.WriteMessage(1, []byte(m))
-		if err != nil {
-			log.Fatalln(err)
-		}
-	}
-}
-
 func SendUserMsg(c *gin.Context) {
 	models.Chat(c.Writer, c.Request)
 }
+
+// SearchFriends 查找好友列表
 func SearchFriends(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Request.FormValue("userId"))
 	users := models.SearchFriend(uint(id))
-	// c.JSON(200, gin.H{
-	// 	"code":    0, //  0成功   -1失败
-	// 	"message": "查询好友列表成功！",
-	// 	"data":    users,
-	// })
 	utils.RespOKList(c.Writer, users, len(users))
 }
 
+// AddFriend 添加好友
 func AddFriend(c *gin.Context) {
 	userId, _ := strconv.Atoi(c.Request.FormValue("userId"))
 	targetName := c.Request.FormValue("targetName")
@@ -321,10 +314,9 @@ func JoinGroups(c *gin.Context) {
 	}
 }
 
+// FindByID 根据用户Id查找用户
 func FindByID(c *gin.Context) {
 	userId, _ := strconv.Atoi(c.Request.FormValue("userId"))
-
-	//	name := c.Request.FormValue("name")
 	data := models.FindByID(uint(userId))
 	utils.RespOK(c.Writer, data, "ok")
 }

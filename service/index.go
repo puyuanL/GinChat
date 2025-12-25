@@ -18,9 +18,6 @@ func GetIndex(c *gin.Context) {
 		panic(err)
 	}
 	ind.Execute(c.Writer, "index")
-	// c.JSON(200, gin.H{
-	// 	"message": "welcome !!  ",
-	// })
 }
 
 func ToRegister(c *gin.Context) {
@@ -29,9 +26,6 @@ func ToRegister(c *gin.Context) {
 		panic(err)
 	}
 	ind.Execute(c.Writer, "register")
-	// c.JSON(200, gin.H{
-	// 	"message": "welcome !!  ",
-	// })
 }
 
 func ToChat(c *gin.Context) {
@@ -53,11 +47,7 @@ func ToChat(c *gin.Context) {
 	user := models.UserBasic{}
 	user.ID = uint(userId)
 	user.Identity = token
-	//fmt.Println("ToChat>>>>>>>>", user)
 	ind.Execute(c.Writer, user)
-	// c.JSON(200, gin.H{
-	// 	"message": "welcome !!  ",
-	// })
 }
 
 func Chat(c *gin.Context) {

@@ -20,5 +20,13 @@ func main() {
 
 // InitTimer 初始化定时器
 func InitTimer() {
-	utils.Timer(time.Duration(viper.GetInt("timeout.DelayHeartbeat"))*time.Second, time.Duration(viper.GetInt("timeout.HeartbeatHz"))*time.Second, models.CleanConnection, "")
+	wrapCleanConn := func(param interface{}) bool {
+		return models.CleanConnection()
+	}
+	utils.Timer(
+		time.Duration(viper.GetInt("timeout.DelayHeartbeat"))*time.Second,
+		time.Duration(viper.GetInt("timeout.HeartbeatHz"))*time.Second,
+		wrapCleanConn,
+		"",
+	)
 }
