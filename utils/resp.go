@@ -26,7 +26,10 @@ func Resp(w http.ResponseWriter, code int, data interface{}, msg string) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	w.Write(ret)
+	_, err = w.Write(ret)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 func RespList(w http.ResponseWriter, code int, data interface{}, total interface{}) {
@@ -41,7 +44,10 @@ func RespList(w http.ResponseWriter, code int, data interface{}, total interface
 	if err != nil {
 		fmt.Println(err)
 	}
-	w.Write(ret)
+	_, err = w.Write(ret)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 func RespFail(w http.ResponseWriter, msg string) {
