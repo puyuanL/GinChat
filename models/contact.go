@@ -2,6 +2,7 @@ package models
 
 import (
 	"GinChat/utils"
+	"errors"
 
 	"gorm.io/gorm"
 )
@@ -37,9 +38,8 @@ func SearchFriend(userId uint) []UserBasic {
 func AddFriend(userId uint, targetName string) (int, string) {
 
 	if targetName != "" {
-		targetUser := FindUserByName(targetName)
-		//fmt.Println(targetUser, " userId        ", )
-		if targetUser.Salt != "" {
+		targetUser, err := FindUserByName(targetName)
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			if targetUser.ID == userId {
 				return -1, "不能加自己"
 			}

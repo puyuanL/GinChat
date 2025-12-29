@@ -3,7 +3,9 @@ package service
 import (
 	"GinChat/models"
 	"GinChat/utils"
+	"errors"
 	"fmt"
+	"gorm.io/gorm"
 	"math/rand"
 	"strconv"
 	"time"
@@ -42,7 +44,7 @@ func CreateUser(c *gin.Context) {
 	rePassword := c.Request.FormValue("Identity")
 	salt := fmt.Sprintf("%06d", rand.Int31())
 
-	data := models.FindUserByName(user.Name)
+	_, err := models.FindUserByName(user.Name)
 	if user.Name == "" || password == "" || rePassword == "" {
 		c.JSON(200, gin.H{
 			"code":    -1, //  0成功   -1失败
@@ -51,7 +53,7 @@ func CreateUser(c *gin.Context) {
 		})
 		return
 	}
-	if data.Name != "" {
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		c.JSON(200, gin.H{
 			"code":    -1, //  0成功   -1失败
 			"message": "用户名已注册！",
@@ -91,8 +93,9 @@ func CreateUser(c *gin.Context) {
 func FindUserByNameAndPwd(c *gin.Context) {
 	name := c.Request.FormValue("name")
 	password := c.Request.FormValue("password")
-	user := models.FindUserByName(name)
-	if user.Name == "" {
+	user, err := models.FindUserByName(name)
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		c.JSON(200, gin.H{
 			"code":    -1, //  0成功   -1失败
 			"message": "该用户不存在",
@@ -109,7 +112,6 @@ func FindUserByNameAndPwd(c *gin.Context) {
 		})
 		return
 	}
-	var err error
 	user.Identity, err = utils.GenerateTokens(user.ID, user.Name)
 	if err != nil {
 		fmt.Println("generate user token error: ", err)

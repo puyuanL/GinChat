@@ -2,6 +2,7 @@ package models
 
 import (
 	"GinChat/utils"
+	"errors"
 	"fmt"
 	"time"
 
@@ -44,10 +45,14 @@ func RefreshSQLToken(user UserBasic, token string) error {
 	return result.Error
 }
 
-func FindUserByName(name string) UserBasic {
+func FindUserByName(name string) (UserBasic, error) {
 	user := UserBasic{}
-	utils.DB.Where("name = ?", name).First(&user)
-	return user
+	result := utils.DB.Where("name = ?", name).First(&user)
+	// can't find this username
+	if result.Error != nil && errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return user, gorm.ErrRecordNotFound
+	}
+	return user, nil
 }
 func FindUserByPhone(phone string) *gorm.DB {
 	user := UserBasic{}
