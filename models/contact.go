@@ -44,34 +44,39 @@ func AddFriend(userId uint, targetName string) (int, string) {
 				return -1, "不能加自己"
 			}
 			contact0 := Contact{}
-			utils.DB.Where("owner_id =?  and target_id =? and type=1", userId, targetUser.ID).Find(&contact0)
+			utils.DB.Where("owner_id =? and target_id =? and type=1", userId, targetUser.ID).Find(&contact0)
 			if contact0.ID != 0 {
 				return -1, "不能重复添加"
 			}
-			tx := utils.DB.Begin()
-			//事务一旦开始，不论什么异常最终都会 Rollback
-			defer func() {
-				if r := recover(); r != nil {
-					tx.Rollback()
-				}
-			}()
-			contact := Contact{}
-			contact.OwnerId = userId
-			contact.TargetId = targetUser.ID
-			contact.Type = 1
-			if err := utils.DB.Create(&contact).Error; err != nil {
-				tx.Rollback()
-				return -1, "添加好友失败"
+
+			contacts := []Contact{
+				{OwnerId: userId, TargetId: targetUser.ID, Type: 1},
+				{OwnerId: targetUser.ID, TargetId: userId, Type: 1},
 			}
-			contact1 := Contact{}
-			contact1.OwnerId = targetUser.ID
-			contact1.TargetId = userId
-			contact1.Type = 1
-			if err := utils.DB.Create(&contact1).Error; err != nil {
-				tx.Rollback()
-				return -1, "添加好友失败"
+
+			// Method 1 -- Transaction
+			////事务一旦开始，不论什么异常最终都会
+			//tx := utils.DB.Begin()
+			//defer func() {
+			//	if r := recover(); r != nil {
+			//		tx.Rollback()
+			//	}
+			//}()
+			//if err := utils.DB.Create(&contacts[0]).Error; err != nil {
+			//	tx.Rollback()
+			//	return -1, "添加好友失败"
+			//}
+			//if err := utils.DB.Create(&contacts[1]).Error; err != nil {
+			//	tx.Rollback()
+			//	return -1, "添加好友失败"
+			//}
+			//tx.Commit()
+
+			// Method 2 -- Insert Multi Data
+			if err := utils.DB.Create(&contacts).Error; err != nil {
+				return -1, "添加好友失败：" + err.Error()
 			}
-			tx.Commit()
+
 			return 0, "添加好友成功"
 		}
 		return -1, "没有找到此用户"

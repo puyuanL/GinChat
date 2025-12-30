@@ -16,8 +16,8 @@ type Community struct {
 }
 
 func CreateCommunity(community Community) (int, string) {
-	tx := utils.DB.Begin()
 	//事务一旦开始，不论什么异常最终都会 Rollback
+	tx := utils.DB.Begin()
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
@@ -35,10 +35,11 @@ func CreateCommunity(community Community) (int, string) {
 		tx.Rollback()
 		return -1, "建群失败"
 	}
-	contact := Contact{}
-	contact.OwnerId = community.OwnerId
-	contact.TargetId = community.ID
-	contact.Type = 2 //群关系
+	contact := Contact{
+		OwnerId:  community.OwnerId,
+		TargetId: community.ID,
+		Type:     2, //群关系
+	}
 	if err := utils.DB.Create(&contact).Error; err != nil {
 		tx.Rollback()
 		return -1, "添加群关系失败"
@@ -46,7 +47,6 @@ func CreateCommunity(community Community) (int, string) {
 
 	tx.Commit()
 	return 0, "建群成功"
-
 }
 
 func LoadCommunity(ownerId uint) ([]*Community, string) {
