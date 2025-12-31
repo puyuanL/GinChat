@@ -43,8 +43,6 @@ func CreateUser(c *gin.Context) {
 	password := c.Request.FormValue("password")
 	rePassword := c.Request.FormValue("Identity")
 	salt := fmt.Sprintf("%06d", rand.Int31())
-
-	_, err := models.FindUserByName(user.Name)
 	if user.Name == "" || password == "" || rePassword == "" {
 		c.JSON(200, gin.H{
 			"code":    -1, //  0成功   -1失败
@@ -53,18 +51,21 @@ func CreateUser(c *gin.Context) {
 		})
 		return
 	}
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		c.JSON(200, gin.H{
-			"code":    -1, //  0成功   -1失败
-			"message": "用户名已注册！",
-			"data":    user,
-		})
-		return
-	}
 	if password != rePassword {
 		c.JSON(200, gin.H{
 			"code":    -1, //  0成功   -1失败
 			"message": "两次密码不一致！",
+			"data":    user,
+		})
+		return
+	}
+
+	// check duplicate name
+	_, err := models.FindUserByName(user.Name)
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(200, gin.H{
+			"code":    -1, //  0成功   -1失败
+			"message": "用户名已注册！",
 			"data":    user,
 		})
 		return
@@ -179,25 +180,66 @@ func UpdateUser(c *gin.Context) {
 	user.Phone = c.PostForm("phone")
 	user.Avatar = c.PostForm("icon")
 	user.Email = c.PostForm("email")
-	fmt.Println("update :", user)
 
 	_, err := govalidator.ValidateStruct(user)
 	if err != nil {
 		fmt.Println(err)
 		c.JSON(200, gin.H{
 			"code":    -1, //  0成功   -1失败
-			"message": "修改参数不匹配！",
+			"message": "邮箱/电话号码格式错误！",
 			"data":    user,
 		})
-	} else {
-		models.UpdateUser(user)
-		c.JSON(200, gin.H{
-			"code":    0, //  0成功   -1失败
-			"message": "修改用户成功！",
-			"data":    user,
-		})
+		return
 	}
 
+	origin := models.FindByID(user.ID)
+
+	// check duplicate (name, email, phone)
+	_, err = models.FindUserByName(user.Name)
+	if err == nil && origin.ID != user.ID { // 查到记录且不是自己 → 重复
+		c.JSON(200, gin.H{
+			"code":    -1,
+			"message": "用户名已被使用",
+			"data":    user,
+		})
+		return
+	}
+	_, err = models.FindUserByEmail(user.Email)
+	if err == nil && origin.Email != user.Email {
+		c.JSON(200, gin.H{
+			"code":    -1,
+			"message": "邮箱已绑定",
+			"data":    user,
+		})
+		return
+	}
+	_, err = models.FindUserByPhone(user.Phone)
+	if err == nil && origin.Phone != user.Phone {
+		c.JSON(200, gin.H{
+			"code":    -1,
+			"message": "手机号码已绑定",
+			"data":    user,
+		})
+		return
+	}
+
+	// check success
+	user.PassWord = utils.MakePassword(user.PassWord, origin.Salt)
+	result := models.UpdateUser(user)
+	if result.Error != nil {
+		c.JSON(200, gin.H{
+			"code":    -1,
+			"message": "服务器出错",
+			"data":    user,
+		})
+		panic(fmt.Sprintf("UpdateUser -- 修改数据库错误：%v", result.Error))
+		return
+	}
+	c.JSON(200, gin.H{
+		"code":    0, //  0成功   -1失败
+		"message": "修改用户成功！",
+		"data":    user,
+	})
 }
 
 // 防止跨域站点伪造请求

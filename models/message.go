@@ -235,17 +235,17 @@ func sendGroupMsg(targetId int64, msg []byte) {
 	}
 }
 
-func JoinGroup(userId uint, comId string) (int, string) {
+func JoinGroup(userId uint, comIdOrName string) (int, string) {
 	contact := Contact{}
 	contact.OwnerId = userId
 	contact.Type = 2
 	community := Community{}
 
-	utils.DB.Where("id=? or name=?", comId, comId).Find(&community)
+	utils.DB.Where("id=? or name=?", comIdOrName, comIdOrName).Find(&community)
 	if community.Name == "" {
 		return -1, "没有找到群"
 	}
-	utils.DB.Where("owner_id=? and target_id=? and type =2 ", userId, comId).Find(&contact)
+	utils.DB.Where("owner_id=? and target_id=? and type =2 ", userId, community.ID).Find(&contact)
 	if !contact.CreatedAt.IsZero() {
 		return -1, "已加过此群"
 	} else {

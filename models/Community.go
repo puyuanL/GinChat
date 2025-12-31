@@ -62,6 +62,6 @@ func LoadCommunity(ownerId uint) ([]*Community, string) {
 	for _, v := range data {
 		fmt.Println(v)
 	}
-	//utils.DB.Where()
+
 	return data, "查询成功"
 }
