@@ -280,6 +280,7 @@ func UpdateUser(c *gin.Context) {
 //	}
 //}
 
+// RedisMsg 获取Redis中的历史消息
 func RedisMsg(c *gin.Context) {
 	userIdA, _ := strconv.Atoi(c.PostForm("userIdA"))
 	userIdB, _ := strconv.Atoi(c.PostForm("userIdB"))

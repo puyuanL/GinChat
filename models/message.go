@@ -235,6 +235,7 @@ func sendGroupMsg(targetId int64, msg []byte) {
 	}
 }
 
+// JoinGroup 加入群聊
 func JoinGroup(userId uint, comIdOrName string) (int, string) {
 	contact := Contact{}
 	contact.OwnerId = userId
@@ -280,23 +281,30 @@ func sendMsg(userId int64, msg []byte) {
 			node.DataQueue <- msg
 		}
 	}
+
+	// build redis key
 	var key string
 	if userId > jsonMsg.UserId {
 		key = "msg_" + userIdStr + "_" + targetIdStr
 	} else {
 		key = "msg_" + targetIdStr + "_" + userIdStr
 	}
-	res, err := utils.RedisClient.ZRevRange(ctx, key, 0, -1).Result()
+
+	// 降序获取所有 key 下的历史 msg
+	msgs, err := utils.RedisClient.ZRevRange(ctx, key, 0, -1).Result()
 	if err != nil {
 		fmt.Println(err)
 	}
-	score := float64(cap(res)) + 1
-	ress, err := utils.RedisClient.ZAdd(ctx, key, &redis.Z{score, msg}).Result() //jsonMsg
-	//res, e := utils.RedisClient.Do(ctx, "zadd", key, 1, jsonMsg).Result() //备用 后续拓展 记录完整msg
+
+	// 加入新的msg，并让其排序最大
+	// 新增的元素个数（1 = 新增、0 = 仅更新分数）
+	score := float64(cap(msgs)) + 1
+	res, err := utils.RedisClient.ZAdd(ctx, key, &redis.Z{Score: score, Member: msg}).Result() //jsonMsg
+	//msgs, e := utils.RedisClient.Do(ctx, "zadd", key, 1, jsonMsg).Result() //备用 后续拓展 记录完整msg
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(ress)
+	fmt.Println(res)
 }
 
 // MarshalBinary 需要重写此方法才能完整的msg转byte[]
@@ -305,10 +313,14 @@ func (msg Message) MarshalBinary() ([]byte, error) {
 }
 
 // RedisMsg 获取缓存里面的消息
+// @Param userIdA 用户A的Id  发送者
+// @Param userIdB 用户B的Id  接收者
+// @Param start & end	消息获取idx范围
+// @Param isRev			是否需要反转
 func RedisMsg(userIdA int64, userIdB int64, start int64, end int64, isRev bool) []string {
-	rwLocker.RLock()
+	//rwLocker.RLock()
 	//node, ok := clientMap[userIdA]
-	rwLocker.RUnlock()
+	//rwLocker.RUnlock()
 	//jsonMsg := Message{}
 	//json.Unmarshal(msg, &jsonMsg)
 	ctx := context.Background()
@@ -321,6 +333,7 @@ func RedisMsg(userIdA int64, userIdB int64, start int64, end int64, isRev bool) 
 		key = "msg_" + userIdStr + "_" + targetIdStr
 	}
 
+	// 获取Redis查到的消息列表rels
 	var rels []string
 	var err error
 	if isRev {
