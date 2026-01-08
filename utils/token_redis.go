@@ -47,7 +47,7 @@ func GenerateTokens(userID uint, username string) (accessToken string, err error
 	ctx := context.Background()
 	// 3. 存储访问Token到Redis（设置过期时间）
 	accessTokenKey := fmt.Sprintf("%s%s", RedisAccessTokenPrefix, accessToken)
-	if err := RedisClient.SetEX(ctx, accessTokenKey, userInfoJSON, AccessTokenExpire).Err(); err != nil {
+	if err := RedisCluster.SetEx(ctx, accessTokenKey, userInfoJSON, AccessTokenExpire).Err(); err != nil {
 		return "", fmt.Errorf("存储访问Token失败: %w", err)
 	}
 
@@ -59,7 +59,7 @@ func VerifyAccessToken(token string) (*UserInfo, error) {
 	ctx := context.Background()
 
 	tokenKey := fmt.Sprintf("%s%s", RedisAccessTokenPrefix, token)
-	userInfoJSON, err := RedisClient.Get(ctx, tokenKey).Result()
+	userInfoJSON, err := RedisCluster.Get(ctx, tokenKey).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) { // Token不存在（过期/已登出/无效）
 			return nil, errors.New("token invalid (Logout/Expire)")
@@ -80,7 +80,7 @@ func VerifyAccessToken(token string) (*UserInfo, error) {
 func InvalidateToken(token string) error {
 	ctx := context.Background()
 	tokenKey := fmt.Sprintf("%s%s", RedisAccessTokenPrefix, token)
-	if err := RedisClient.Del(ctx, tokenKey).Err(); err != nil {
+	if err := RedisCluster.Del(ctx, tokenKey).Err(); err != nil {
 		return fmt.Errorf("invalid Token: %w", err)
 	}
 	return nil

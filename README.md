@@ -183,7 +183,9 @@ application：	http://localhost:8082/
 
 优化：Golang项目的网关、拦截器、ThreadLocal是如何实现的？
 
-**BUG：用户为建立websocket时，收不到群聊消息**；待测试：用户离线时，能否收到消息
+**BUG：用户未建立websocket时，收不到群聊消息**；待测试：用户离线时，能否收到消息
+
+优化：分布式 redis
 
 
 

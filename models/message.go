@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/websocket"
+	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 	"gopkg.in/fatih/set.v0"
 	"gorm.io/gorm"
@@ -271,7 +271,7 @@ func sendMsg(userId int64, msg []byte) {
 	targetIdStr := strconv.Itoa(int(userId))
 	userIdStr := strconv.Itoa(int(jsonMsg.UserId))
 	jsonMsg.CreateTime = uint64(time.Now().Unix())
-	r, err := utils.RedisClient.Get(ctx, "online_"+userIdStr).Result()
+	r, err := utils.RedisCluster.Get(ctx, "online_"+userIdStr).Result()
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -291,7 +291,7 @@ func sendMsg(userId int64, msg []byte) {
 	}
 
 	// 降序获取所有 key 下的历史 msg
-	msgs, err := utils.RedisClient.ZRevRange(ctx, key, 0, -1).Result()
+	msgs, err := utils.RedisCluster.ZRevRange(ctx, key, 0, -1).Result()
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -299,7 +299,7 @@ func sendMsg(userId int64, msg []byte) {
 	// 加入新的msg，并让其排序最大
 	// 新增的元素个数（1 = 新增、0 = 仅更新分数）
 	score := float64(cap(msgs)) + 1
-	res, err := utils.RedisClient.ZAdd(ctx, key, &redis.Z{Score: score, Member: msg}).Result() //jsonMsg
+	res, err := utils.RedisCluster.ZAdd(ctx, key, redis.Z{Score: score, Member: msg}).Result() //jsonMsg
 	//msgs, e := utils.RedisClient.Do(ctx, "zadd", key, 1, jsonMsg).Result() //备用 后续拓展 记录完整msg
 	if err != nil {
 		fmt.Println(err)
@@ -337,9 +337,9 @@ func RedisMsg(userIdA int64, userIdB int64, start int64, end int64, isRev bool) 
 	var rels []string
 	var err error
 	if isRev {
-		rels, err = utils.RedisClient.ZRange(ctx, key, start, end).Result()
+		rels, err = utils.RedisCluster.ZRange(ctx, key, start, end).Result()
 	} else {
-		rels, err = utils.RedisClient.ZRevRange(ctx, key, start, end).Result()
+		rels, err = utils.RedisCluster.ZRevRange(ctx, key, start, end).Result()
 	}
 	if err != nil {
 		fmt.Println(err) //没有找到

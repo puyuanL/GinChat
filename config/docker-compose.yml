@@ -1,0 +1,103 @@
+# ~/redis-cluster/docker-compose.yml
+version: '3.8'
+
+services:
+  redis-7000:
+    image: redis:latest
+    container_name: redis-7000
+    ports:
+      - "7000:7000"
+      - "17000:17000"  # 集群总线端口（port+10000）
+    volumes:
+      - ./7000/redis.conf:/etc/redis/redis.conf
+      - ./7000/data:/data
+    command: redis-server /etc/redis/redis.conf
+    networks:
+      - redis-cluster-net
+    restart: always
+
+  redis-7001:
+    image: redis:latest
+    container_name: redis-7001
+    ports:
+      - "7001:7001"
+      - "17001:17001"
+    volumes:
+      - ./7001/redis.conf:/etc/redis/redis.conf
+      - ./7001/data:/data
+    command: redis-server /etc/redis/redis.conf
+    networks:
+      - redis-cluster-net
+    restart: always
+
+  redis-7002:
+    image: redis:latest
+    container_name: redis-7002
+    ports:
+      - "7002:7002"
+      - "17002:17002"
+    volumes:
+      - ./7002/redis.conf:/etc/redis/redis.conf
+      - ./7002/data:/data
+    command: redis-server /etc/redis/redis.conf
+    networks:
+      - redis-cluster-net
+    restart: always
+
+  redis-7003:
+    image: redis:latest
+    container_name: redis-7003
+    ports:
+      - "7003:7003"
+      - "17003:17003"
+    volumes:
+      - ./7003/redis.conf:/etc/redis/redis.conf
+      - ./7003/data:/data
+    command: redis-server /etc/redis/redis.conf
+    networks:
+      - redis-cluster-net
+    restart: always
+
+  redis-7004:
+    image: redis:latest
+    container_name: redis-7004
+    ports:
+      - "7004:7004"
+      - "17004:17004"
+    volumes:
+      - ./7004/redis.conf:/etc/redis/redis.conf
+      - ./7004/data:/data
+    command: redis-server /etc/redis/redis.conf
+    networks:
+      - redis-cluster-net
+    restart: always
+
+  redis-7005:
+    image: redis:latest
+    container_name: redis-7005
+    ports:
+      - "7005:7005"
+      - "17005:17005"
+    volumes:
+      - ./7005/redis.conf:/etc/redis/redis.conf
+      - ./7005/data:/data
+    command: redis-server /etc/redis/redis.conf
+    networks:
+      - redis-cluster-net
+    restart: always
+
+networks:
+  redis-cluster-net:
+    driver: bridge
+
+## init redis cluster ##
+#  docker exec -it redis-7000 redis-cli --cluster create \
+#  host.docker.internal:7000 \
+#  host.docker.internal:7001 \
+#  host.docker.internal:7002 \
+#  host.docker.internal:7003 \
+#  host.docker.internal:7004 \
+#  host.docker.internal:7005 \
+#  --cluster-replicas 1
+#
+# NOTE: 使用 host.docker.internal 作为 redis-cluster 的通讯ip

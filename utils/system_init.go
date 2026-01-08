@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -15,8 +15,9 @@ import (
 )
 
 var (
-	DB          *gorm.DB
-	RedisClient *redis.Client
+	DB *gorm.DB
+	// RedisCluster RedisClient  *redis.Client
+	RedisCluster *redis.ClusterClient
 )
 
 func InitConfig() {
@@ -48,14 +49,30 @@ func InitMySQL() {
 	//fmt.Println(user)
 }
 
-func InitRedis() {
-	RedisClient = redis.NewClient(&redis.Options{
-		Addr:         viper.GetString("redis.addr"),
-		Password:     viper.GetString("redis.password"),
-		DB:           viper.GetInt("redis.DB"),
-		PoolSize:     viper.GetInt("redis.poolSize"),
-		MinIdleConns: viper.GetInt("redis.minIdleConn"),
+//// InitRedis 初始化单节点Redis
+//func InitRedis() {
+//	RedisClient = redis.NewClient(&redis.Options{
+//		Addr:         viper.GetString("redis.addr"),
+//		Password:     viper.GetString("redis.password"),
+//		DB:           viper.GetInt("redis.DB"),
+//		PoolSize:     viper.GetInt("redis.poolSize"),
+//		MinIdleConns: viper.GetInt("redis.minIdleConn"),
+//	})
+//}
+
+// InitRedisCluster 初始化单节点Redis
+func InitRedisCluster() {
+	RedisCluster = redis.NewClusterClient(&redis.ClusterOptions{
+		// 虚拟机 Redis 集群节点列表（必填）
+		Addrs:    viper.GetStringSlice("redis.cluster.addrs"),
+		Password: "", // 集群密码（若无则留空）
+		// 可选配置（根据需要调整）
+		DialTimeout:  5 * time.Second, // 连接超时
+		ReadTimeout:  3 * time.Second, // 读超时
+		WriteTimeout: 3 * time.Second, // 写超时
+		MaxRedirects: 3,               // 集群重定向最大次数
 	})
+	fmt.Println(" Redis initialized.", viper.GetStringSlice("redis.cluster.addrs"))
 }
 
 const (
@@ -66,7 +83,7 @@ const (
 func Publish(ctx context.Context, channel string, msg string) error {
 	var err error
 	fmt.Println("Publish...", msg)
-	err = RedisClient.Publish(ctx, channel, msg).Err()
+	err = RedisCluster.Publish(ctx, channel, msg).Err()
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -75,7 +92,7 @@ func Publish(ctx context.Context, channel string, msg string) error {
 
 // Subscribe 订阅Redis消息
 func Subscribe(ctx context.Context, channel string) (string, error) {
-	sub := RedisClient.Subscribe(ctx, channel)
+	sub := RedisCluster.Subscribe(ctx, channel)
 	fmt.Println("Subscribe...", ctx)
 	msg, err := sub.ReceiveMessage(ctx)
 	if err != nil {

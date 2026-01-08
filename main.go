@@ -12,7 +12,8 @@ import (
 func main() {
 	utils.InitConfig()
 	utils.InitMySQL()
-	utils.InitRedis()
+	//utils.InitRedis()
+	utils.InitRedisCluster()
 	InitTimer()
 	r := router.Router()                  // router.Router()
 	r.Run(viper.GetString("port.server")) // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")

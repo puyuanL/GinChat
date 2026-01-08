@@ -4,12 +4,28 @@ app:
   env: dev
 mysql:
   dns: root:1234@tcp(172.18.91.89:3306)/ginchat?charset=utf8mb4&parseTime=True&loc=Local
+#redis:
+#  addr: "172.18.91.89:6379"
+#  password: ""
+#  DB: 0
+#  poolSize: 30
+#  minIdleConn: 30
+
 redis:
-  addr: "172.18.91.89:6379"
-  password: ""
-  DB: 0
-  poolSize: 30
-  minIdleConn: 30
+  cluster:
+    # 虚拟机 Docker 中 Redis 集群的节点列表（需填写实际虚拟机IP+集群端口）
+    addrs:
+      - "172.18.91.89:7000"
+      - "172.18.91.89:7001"
+      - "172.18.91.89:7002"
+      - "172.18.91.89:7003"
+      - "172.18.91.89:7004"
+      - "172.18.91.89:7005"
+    password: ""
+    dial_timeout: 5s
+    read_timeout: 3s
+    write_timeout: 3s
+
 oss:
   Endpoint: "oss-cn-hangzhou.aliyuncs.com"
   AccessKeyId: "LTAI5tNCXPJwS3MstKoKgixh"
